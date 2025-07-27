@@ -1,0 +1,58 @@
+version: '3'
+
+services:
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_ARBITRARY: 1
+    restart: unless-stopped
+    ports:
+      - '8061:80'
+
+  db:
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+      MYSQL_DATABASE: prestashop
+    healthcheck:
+      test: ["CMD", "mysql", "-u", "root", "-padmin", "-e", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - db_data:/var/lib/mysql
+
+  prestashop:
+    image: prestashop/prestashop:latest
+    restart: always
+    ports:
+      - '8080:80'
+    environment:
+      DB_SERVER: db
+      DB_NAME: prestashop
+      DB_USER: root
+      DB_PASSWORD: admin
+      PS_INSTALL_AUTO: "1"
+      PS_LANGUAGE: en
+      PS_COUNTRY: US
+      ADMIN_MAIL: admin@example.com
+      ADMIN_PASSWD: admin123
+      PS_FOLDER_ADMIN: admin4577
+      PS_FOLDER_INSTALL: install4577
+      PS_DOMAIN: ${LOCAL_IP}:8080
+    volumes:
+      - ps_data:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  ps_data:
+  db_data:
+
+networks:
+  prestashop_network:
